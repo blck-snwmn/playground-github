@@ -18,12 +18,23 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
+            console.log(`Fetching releases for ${context.repo.owner}/${context.repo.repo}`);
+            
             const releases = await github.rest.repos.listReleases({
               owner: context.repo.owner,
               repo: context.repo.repo
             });
             
+            console.log(`Total releases found: ${releases.data.length}`);
+            
+            // Debug: Show all releases
+            releases.data.forEach(release => {
+              console.log(`- ${release.name || release.tag_name}: draft=${release.draft}, published_at=${release.published_at}`);
+            });
+            
             const drafts = releases.data.filter(release => release.draft);
+            
+            console.log(`Draft releases found: ${drafts.length}`);
             
             if (drafts.length === 0) {
               core.setFailed('No draft releases found');
