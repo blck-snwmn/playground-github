@@ -49,7 +49,7 @@ jobs:
             const body = latestDraft.body || '';
             
             // Pattern to match PR lines: * PR title by @author in URL
-            const prLineRegex = /\* (.+?) by @(\w+) in https:\/\/github\.com\/.+?\/pull\/(\d+)/g;
+            const prLineRegex = /\*\s+(.+?)\s+by\s+@(\w+)\s+in\s+https:\/\/github\.com\/.+?\/pull\/(\d+)/g;
             const prDetails = [];
             let match;
             
