@@ -48,6 +48,10 @@ jobs:
             // Extract PR information from release notes
             const body = latestDraft.body || '';
             
+            console.log('Release body:');
+            console.log(body);
+            console.log('---');
+            
             // Pattern to match PR lines: * PR title by @author in URL
             const prLineRegex = /\*\s+(.+?)\s+by\s+@(\w+)\s+in\s+https:\/\/github\.com\/.+?\/pull\/(\d+)/g;
             const prDetails = [];
