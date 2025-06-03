@@ -10,9 +10,10 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
-    - name: Install actionlint
-      run: |
-        go install github.com/rhysd/actionlint/cmd/actionlint@latest
+    - name: Download actionlint
+      run: bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+      shell: bash
     
     - name: Run actionlint
-      run: actionlint
+      run: ./actionlint -color
+      shell: bash
