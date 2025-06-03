@@ -1,0 +1,112 @@
+name: Process Release Draft
+
+on:
+  workflow_dispatch:
+
+jobs:
+  process-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Get draft releases
+        id: get-drafts
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const releases = await github.rest.repos.listReleases({
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            });
+            
+            const drafts = releases.data.filter(release => release.draft);
+            
+            if (drafts.length === 0) {
+              core.setFailed('No draft releases found');
+              return;
+            }
+            
+            // Get the latest draft
+            const latestDraft = drafts[0];
+            console.log(`Processing draft release: ${latestDraft.name || latestDraft.tag_name}`);
+            
+            // Extract PR information from release notes
+            const body = latestDraft.body || '';
+            
+            // Pattern to match PR lines: * PR title by @author in URL
+            const prLineRegex = /\* (.+?) by @(\w+) in https:\/\/github\.com\/.+?\/pull\/(\d+)/g;
+            const prDetails = [];
+            let match;
+            
+            while ((match = prLineRegex.exec(body)) !== null) {
+              prDetails.push({
+                title: match[1],
+                author: match[2],
+                number: parseInt(match[3]),
+                url: `https://github.com/${context.repo.owner}/${context.repo.repo}/pull/${match[3]}`
+              });
+            }
+            
+            console.log(`Found ${prDetails.length} PRs in release notes`);
+            
+            // Output PR information
+            console.log('\n=== PR Information ===');
+            for (const pr of prDetails) {
+              console.log(`PR #${pr.number}: ${pr.title}`);
+              console.log(`  Contributor: @${pr.author}`);
+              console.log(`  URL: ${pr.url}`);
+              console.log('');
+            }
+            
+            // Set outputs
+            core.setOutput('pr_count', prDetails.length);
+            core.setOutput('pr_details', JSON.stringify(prDetails));
+            
+            // Create enhanced markdown summary
+            let summary = `# 📦 Release Draft Analysis\n\n`;
+            summary += `## 🏷️ Release: ${latestDraft.name || latestDraft.tag_name}\n\n`;
+            
+            if (latestDraft.created_at) {
+              summary += `**Created:** ${new Date(latestDraft.created_at).toLocaleString()}\n\n`;
+            }
+            
+            summary += `## 📊 Summary\n\n`;
+            summary += `- **Total PRs:** ${prDetails.length}\n`;
+            summary += `- **Contributors:** ${[...new Set(prDetails.map(pr => pr.author))].length}\n\n`;
+            
+            summary += `## 🔍 Pull Requests\n\n`;
+            
+            if (prDetails.length > 0) {
+              summary += '| PR | Title | Contributor |\n';
+              summary += '|:---:|:---|:---:|\n';
+              for (const pr of prDetails) {
+                summary += `| [#${pr.number}](${pr.url}) | ${pr.title} | [@${pr.author}](https://github.com/${pr.author}) |\n`;
+              }
+              
+              // Add contributor summary
+              const contributorCounts = {};
+              prDetails.forEach(pr => {
+                contributorCounts[pr.author] = (contributorCounts[pr.author] || 0) + 1;
+              });
+              
+              summary += `\n## 👥 Contributors\n\n`;
+              summary += '| Contributor | PR Count |\n';
+              summary += '|:---|:---:|\n';
+              for (const [author, count] of Object.entries(contributorCounts)) {
+                summary += `| [@${author}](https://github.com/${author}) | ${count} |\n`;
+              }
+            } else {
+              summary += '> ℹ️ No PRs found in release notes.\n';
+            }
+            
+            summary += `\n---\n`;
+            summary += `*Generated at: ${new Date().toISOString()}*\n`;
+            
+            // Write to job summary
+            await core.summary
+              .addRaw(summary)
+              .write();
