@@ -52,18 +52,22 @@ jobs:
             console.log(body);
             console.log('---');
             
-            // Pattern to match PR lines: * PR title by @author in URL
-            const prLineRegex = /\*\s+(.+?)\s+by\s+@(\w+)\s+in\s+https:\/\/github\.com\/.+?\/pull\/(\d+)/g;
+            // Split by lines and process each line
+            const lines = body.split('\n');
             const prDetails = [];
-            let match;
             
-            while ((match = prLineRegex.exec(body)) !== null) {
-              prDetails.push({
-                title: match[1],
-                author: match[2],
-                number: parseInt(match[3]),
-                url: `https://github.com/${context.repo.owner}/${context.repo.repo}/pull/${match[3]}`
-              });
+            for (const line of lines) {
+              // Pattern to match PR lines: * PR title by @author in URL
+              const match = line.match(/^\*\s+(.+?)\s+by\s+@(\w+)\s+in\s+https:\/\/github\.com\/.+?\/pull\/(\d+)/);
+              if (match) {
+                console.log(`Matched PR line: ${line}`);
+                prDetails.push({
+                  title: match[1],
+                  author: match[2],
+                  number: parseInt(match[3]),
+                  url: `https://github.com/${context.repo.owner}/${context.repo.repo}/pull/${match[3]}`
+                });
+              }
             }
             
             console.log(`Found ${prDetails.length} PRs in release notes`);
