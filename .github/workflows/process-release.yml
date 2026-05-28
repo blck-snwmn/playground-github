@@ -3,19 +3,24 @@ name: Process Release Draft
 on:
   workflow_dispatch:
 
+
+permissions:
+  contents: read
 jobs:
   process-release:
     runs-on: ubuntu-latest
     permissions:
       contents: write  # Required to view draft releases
-    
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-      
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
       - name: Get draft releases
         id: get-drafts
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
             console.log(`Fetching releases for ${context.repo.owner}/${context.repo.repo}`);
